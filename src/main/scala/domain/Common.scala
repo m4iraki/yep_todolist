@@ -16,6 +16,10 @@ object Millis {
   def now: Millis = System.currentTimeMillis()
   given Ordering[Millis] = Ordering.Long
 
+  extension (millis: Millis) {
+    def long: Long = millis
+  }
+  
   extension (lhs: Millis) {
     def +(rhs: Millis): Millis = lhs + rhs
     def -(rhs: Millis): Millis = lhs - rhs

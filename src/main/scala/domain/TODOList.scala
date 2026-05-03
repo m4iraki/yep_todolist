@@ -2,8 +2,8 @@ package io.m4iraki
 package domain
 
 final case class TODOList private (
-                                    private val tasks: Map[UUID, Entry],
-                                    doneList: List[Entry],
+  private val tasks: Map[UUID, Entry],
+  doneList: List[Entry],
 )
 
 object TODOList {
@@ -16,6 +16,11 @@ object TODOList {
       entry.id -> TODOList(list.tasks.updated(entry.id, entry), list.doneList)
     }
 
+    def push(at: Millis, content: String): TODOList = add(at, content)._2
+
+    def get(taskId: UUID): Option[Entry] =
+      list.tasks.get(taskId)
+
     def done(at: Millis, taskIds: UUID*): TODOList = {
       val updatedMap = list.tasks -- taskIds
       val tasks = for {
@@ -26,8 +31,11 @@ object TODOList {
       TODOList(updatedMap, updatedDone)
     }
 
+    def getDone(taskId: UUID): Option[Entry] =
+      list.doneList.find(_.id == taskId)
+
     def pruneDone(until: Millis): TODOList =
-      TODOList(list.tasks, list.doneList.filter(_.doneAt.exists(_ < until)))
+      TODOList(list.tasks, list.doneList.filterNot(_.doneAt.exists(_ <= until)))
 
     def tasksList: Seq[Entry] = list.tasks.values.toSeq.sorted
 
