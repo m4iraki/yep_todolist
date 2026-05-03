@@ -8,6 +8,8 @@ import zio.test.Assertion.*
 object DomainSpec extends ZIOSpecDefault {
 
   def spec: Spec[TestEnvironment & Scope, Any] =
-    CommonSpec.spec + TODOListSpec.spec
+    CommonSpec.spec +
+      EntrySpec.spec +
+      TODOListSpec.spec
 
 }

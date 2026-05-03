@@ -1,63 +1,81 @@
 package io.m4iraki
 package domain
 
-final case class TODOList private (
-  private val tasks: Map[UUID, Entry],
-  doneList: List[Entry],
-)
+import domain.Entry.Status
+
+opaque type TODOList = Map[UUID, Entry]
 
 object TODOList {
-  def make: TODOList = new TODOList(Map.empty, Nil)
+  def make: TODOList = Map.empty
 
   extension (list: TODOList) {
 
     def add(at: Millis, content: String): (UUID, TODOList) = {
       val entry = Entry.make(content, at)
-      entry.id -> TODOList(list.tasks.updated(entry.id, entry), list.doneList)
+      entry.id -> list.updated(entry.id, entry)
     }
 
-    def push(at: Millis, content: String): TODOList = add(at, content)._2
+    def get(taskId: UUID): Option[Entry] = list.get(taskId)
 
-    def get(taskId: UUID): Option[Entry] =
-      list.tasks.get(taskId)
+    def done(at: Millis, taskId: UUID): (Boolean, TODOList) =
+      list.get(taskId) match {
+        case Some(value) =>
+          true -> list.updated(taskId, value.done(at))
+        case None =>
+          false -> list
+      }
 
-    def done(at: Millis, taskIds: UUID*): TODOList = {
-      val updatedMap = list.tasks -- taskIds
-      val tasks = for {
-        taskId <- taskIds
-        entry <- list.tasks.get(taskId)
-      } yield entry.done(at)
-      val updatedDone = list.doneList prependedAll tasks
-      TODOList(updatedMap, updatedDone)
-    }
+    def cancel(taskId: UUID): (Boolean, TODOList) =
+      list.get(taskId) match {
+        case Some(value) if value.cancelable =>
+          true -> list.updated(taskId, value.cancel)
+        case _ =>
+          false -> list
+      }
 
-    def getDone(taskId: UUID): Option[Entry] =
-      list.doneList.find(_.id == taskId)
+    def prune(until: Millis): TODOList =
+      list.filter {
+        case (id, entry) =>
+          !entry.prunable || entry.orderingTime > until
+      }
 
-    def pruneDone(until: Millis): TODOList =
-      TODOList(list.tasks, list.doneList.filterNot(_.doneAt.exists(_ <= until)))
+    private def listBy(f: Entry => Boolean): Seq[Entry] =
+      list.values.filter(f).toSeq.sorted
 
-    def tasksList: Seq[Entry] = list.tasks.values.toSeq.sorted
+    def listActive: Seq[Entry] = listBy(_.isActive)
+    def activeCount: Int = listActive.size
+    def listDone: Seq[Entry] = listBy(_.isDone)
+    def doneCount: Int = listDone.size
+    def listCanceled: Seq[Entry] = listBy(_.isCanceled)
+    def canceledCount: Int = listCanceled.size
+    def isEmpty: Boolean = listActive.isEmpty && listDone.isEmpty
+    def isDone: Boolean = listActive.isEmpty
+    def size: Int = activeCount + doneCount
 
     def pretty: String = {
       val padding = 30
+      val active = listActive
+      val done = listDone
       val activeOutput =
-        if list.tasks.isEmpty then "=== NO ACTIVE TASKS ===\n"
+        if active.isEmpty
+        then "=== NO ACTIVE TASKS ===\n"
         else
-          list.tasksList
+          active
             .map(_.pretty(padding))
             .mkString(
               "===  ACTIVE  TASKS  ===\n",
               "\n",
               "\n",
             )
-      list.doneList
-        .map(_.pretty(padding))
-        .mkString(
-          activeOutput + "=== COMPLETED TASKS ===\n",
-          "\n",
-          "",
-        )
+      val doneOutput =
+        done
+          .map(_.pretty(padding))
+          .mkString(
+            "=== COMPLETED TASKS ===\n",
+            "\n",
+            "",
+          )
+      activeOutput + doneOutput
     }
 
   }
