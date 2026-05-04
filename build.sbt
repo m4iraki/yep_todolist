@@ -10,6 +10,7 @@ lazy val root = (project in file("."))
   )
 
 libraryDependencies += "org.typelevel" %% "cats-core" % "2.13.0"
+libraryDependencies += "dev.zio" %% "zio-json" % "0.9.2"
 
 libraryDependencies ++= Seq(
   "dev.zio" %% "zio-test" % zioVersion % Test,

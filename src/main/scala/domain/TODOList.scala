@@ -8,6 +8,15 @@ opaque type TODOList = Map[UUID, Entry]
 object TODOList {
   def make: TODOList = Map.empty
 
+  def fromEntries(entries: Seq[Entry]): TODOList =
+    entries.foldLeft(make){
+      case (acc, entry) =>
+        acc.updatedWith(entry.id){
+          case None => Some(entry)
+          case Some(existing) => Some(existing |+| entry)
+        }
+    }
+
   extension (list: TODOList) {
 
     def add(at: Millis, content: String): (UUID, TODOList) = {

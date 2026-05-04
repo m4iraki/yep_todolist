@@ -7,8 +7,8 @@ import zio.test.Assertion.*
 
 object CommonSpec extends ZIOSpecDefault {
 
-  def spec = suite("Millis")(
-    test("Arithmetic.addition") {
+  def spec = suite("Simple types")(
+    test("Millis.Arithmetic.addition") {
       val gen = for {
         l1 <- Gen.long(0, 1_000_000_000_000_000L)
         l2 <- Gen.long(0, 1_000_000_000_000_000L)
@@ -23,7 +23,7 @@ object CommonSpec extends ZIOSpecDefault {
           assertTrue(Millis.of(lsum) == msum)
       }
     },
-    test("Arithmetic.subtraction") {
+    test("Millis.Arithmetic.subtraction") {
       val gen = for {
         l1 <- Gen.long(0, 1_000_000_000_000_000L)
         l2 <- Gen.long(0, 1_000_000_000_000_000L)
@@ -37,6 +37,16 @@ object CommonSpec extends ZIOSpecDefault {
           assertTrue(lsub == msub.long) &&
           assertTrue(Millis.of(lsub) == msub)
       }
+    },
+    test("UUID.fromString: should create UUID from valid string") {
+      val valid = java.util.UUID.randomUUID().toString
+      val uuid = UUID.fromString(valid)
+      assertTrue(uuid.contains(valid))
+    },
+    test("UUID.fromString: should fail on invalid string") {
+      val invalid = "hehe"
+      val uuid = UUID.fromString(invalid)
+      assertTrue(uuid.isLeft)
     },
   )
 

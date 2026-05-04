@@ -91,7 +91,7 @@ object TODOListSpec extends ZIOSpecDefault {
     test(
       "merge: should result in list containing all entities in merged state",
     ) {
-      check(Gen.listOfBounded(10, 20)(Gen.string)) {
+      check(Gen.listOfBounded(10, 20)(Gen.alphaNumericString)) {
         contents =>
           val (ids, l) = fill(list, contents)
           val part = (ids.size * 0.75d).toInt
@@ -111,7 +111,7 @@ object TODOListSpec extends ZIOSpecDefault {
       }
     },
     test("merge: should contain entries from both lists") {
-      check(Gen.listOfBounded(10, 20)(Gen.string)) {
+      check(Gen.listOfBounded(10, 20)(Gen.alphaNumericString)) {
         contents =>
           val (ids1, l1) = fill(list, contents)
           val (ids2, l2) = fill(list, contents)
@@ -120,6 +120,17 @@ object TODOListSpec extends ZIOSpecDefault {
           assertTrue(ids == merged.ids) &&
           assertTrue(ids.forall(merged.get(_).nonEmpty))
       }
+    },
+    test("fromEntries: should contain all entries merged") {
+      val entry1 = Entry.make("hehe", Millis.of(0L))
+      val entry2 = Entry.make("hehe", Millis.of(0L))
+      val entry1Upd1 = entry1.done(Millis.of(2L))
+      val entry1Upd2 = entry1.done(Millis.of(3L))
+      val entry1Upd3 = entry1.cancel
+      val entries = List(entry2, entry1, entry1Upd1, entry1Upd2, entry1Upd3)
+      val list = TODOList.fromEntries(entries)
+      val expected = Set(entry2, entry1Upd2)
+      assertTrue(expected == list.all.toSet)
     },
   )
 
