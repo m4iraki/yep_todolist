@@ -6,6 +6,7 @@ import zio.test.*
 import zio.test.Assertion.*
 
 import scala.util.Try
+import cats.syntax.semigroup.*
 
 object EntrySpec extends ZIOSpecDefault {
   import Entry.*
@@ -55,18 +56,18 @@ object EntrySpec extends ZIOSpecDefault {
     test("Merge: commutativity") {
       val entry = make("hehe", zeroMillis)
       val done = entry.done(oneMillis)
-      assertTrue(done.merge(entry) == entry.merge(done))
+      assertTrue(done.|+|(entry) == entry.|+|(done))
     },
     test("Merge: associativity") {
       val entry = make("hehe", zeroMillis)
       val canceled = entry.cancel
       val done = entry.done(oneMillis)
-      assertTrue(entry.merge(canceled).merge(done) == entry.merge(canceled.merge(done)))
+      assertTrue(entry.|+|(canceled).|+|(done) == entry.|+|(canceled.|+|(done)))
     },
     test("Merge: exception on id mismatch") {
       val entry1 = make("hehe", zeroMillis)
       val entry2 = make("hehe", zeroMillis)
-      val merged = Try(entry1.merge(entry2))
+      val merged = Try(entry1 |+| entry2)
 
       assertTrue(merged.isFailure)
     },

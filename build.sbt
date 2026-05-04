@@ -7,11 +7,14 @@ lazy val root = (project in file("."))
   .settings(
     name := "yep_todolist",
     idePackagePrefix := Some("io.m4iraki"),
-    libraryDependencies ++= Seq(
-      "dev.zio" %% "zio-test" % zioVersion % Test,
-      "dev.zio" %% "zio-test-sbt" % zioVersion % Test,
-      "dev.zio" %% "zio-test-magnolia" % zioVersion % Test,
-    ),
-
-    testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework"),
   )
+
+libraryDependencies += "org.typelevel" %% "cats-core" % "2.13.0"
+
+libraryDependencies ++= Seq(
+  "dev.zio" %% "zio-test" % zioVersion % Test,
+  "dev.zio" %% "zio-test-sbt" % zioVersion % Test,
+  "dev.zio" %% "zio-test-magnolia" % zioVersion % Test,
+)
+
+ThisBuild / testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")

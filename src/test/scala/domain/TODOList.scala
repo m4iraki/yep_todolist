@@ -88,6 +88,39 @@ object TODOListSpec extends ZIOSpecDefault {
       val (canceled, upd3) = upd2.cancel(id)
       assertTrue(!canceled) && assertTrue(upd2 == upd3)
     },
+    test(
+      "merge: should result in list containing all entities in merged state",
+    ) {
+      check(Gen.listOfBounded(10, 20)(Gen.string)) {
+        contents =>
+          val (ids, l) = fill(list, contents)
+          val part = (ids.size * 0.75d).toInt
+          val toCancel = ids.take(part)
+          val toDone = ids.takeRight(part)
+          val l1 = toCancel.foldLeft(l) {
+            case (l, id) =>
+              l.cancel(id)._2
+          }
+          val l2 = toDone.foldLeft(l) {
+            case (l, id) =>
+              l.done(Millis.of(20L), id)._2
+          }
+          val merged = l1.merge(l2)
+          assertTrue(merged.activeCount == 0) &&
+          assertTrue(toDone.forall(merged.get(_).exists(_.isDone)))
+      }
+    },
+    test("merge: should contain entries from both lists") {
+      check(Gen.listOfBounded(10, 20)(Gen.string)) {
+        contents =>
+          val (ids1, l1) = fill(list, contents)
+          val (ids2, l2) = fill(list, contents)
+          val merged = l1.merge(l2)
+          val ids = ids1.toSet union ids2.toSet
+          assertTrue(ids == merged.ids) &&
+          assertTrue(ids.forall(merged.get(_).nonEmpty))
+      }
+    },
   )
 
   val list: TODOList = TODOList.make
@@ -95,5 +128,12 @@ object TODOListSpec extends ZIOSpecDefault {
   def oneToTenCheck(
     fold: ((TODOList, TestResult), Int) => (TODOList, TestResult),
   ): TestResult = (1 to 10).foldLeft(list -> assertTrue(true))(fold)._2
+
+  def fill(list: TODOList, items: Seq[String]): (Seq[UUID], TODOList) =
+    items.zipWithIndex.foldLeft(Seq.empty[UUID] -> list) {
+      case ((ids, l), (item, idx)) =>
+        val (id, upd) = l.add(Millis.of(idx), item)
+        (id +: ids, upd)
+    }
 
 }

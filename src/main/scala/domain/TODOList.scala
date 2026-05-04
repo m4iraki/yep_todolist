@@ -1,7 +1,7 @@
 package io.m4iraki
 package domain
 
-import domain.Entry.Status
+import cats.syntax.semigroup.*
 
 opaque type TODOList = Map[UUID, Entry]
 
@@ -40,7 +40,7 @@ object TODOList {
       }
 
     private def listBy(f: Entry => Boolean): Seq[Entry] =
-      list.values.filter(f).toSeq.sorted
+      list.values.filter(f).toSeq
 
     def listActive: Seq[Entry] = listBy(_.isActive)
     def activeCount: Int = listActive.size
@@ -51,6 +51,8 @@ object TODOList {
     def isEmpty: Boolean = listActive.isEmpty && listDone.isEmpty
     def isDone: Boolean = listActive.isEmpty
     def size: Int = activeCount + doneCount
+    def all: Seq[Entry] = list.values.toSeq
+    def ids: Set[UUID] = list.keySet
 
     def pretty: String = {
       val padding = 30
@@ -77,6 +79,9 @@ object TODOList {
           )
       activeOutput + doneOutput
     }
+
+    def merge(that: TODOList): TODOList =
+      list |+| that
 
   }
 

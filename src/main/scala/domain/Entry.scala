@@ -1,6 +1,8 @@
 package io.m4iraki
 package domain
 
+import cats.kernel.Semigroup
+
 final case class Entry(
   id: UUID,
   content: String,
@@ -37,8 +39,12 @@ object Entry {
 
   }
 
-  given Ordering[Entry] =
-    Ordering.by[Entry, Millis](_.orderingTime)
+  given Ordering[Entry] = Ordering.by[Entry, Millis](_.orderingTime)
+
+  private[domain] given Semigroup[Entry] = (x: Entry, y: Entry) => {
+    assume(x.id == y.id)
+    x.copy(status = x.status.merge(y.status))
+  }
 
   def make(content: String, at: Millis): Entry =
     new Entry(UUID.make, content, at, Created)
@@ -77,11 +83,6 @@ object Entry {
       val timestamp = entry.orderingTime.pretty
       val status = entry.status.pretty
       s"$status ${entry.content.padTo(padTo, ' ')} | $timestamp"
-    }
-
-    private[domain] def merge(that: Entry): Entry = {
-      assume(that.id == entry.id)
-      entry.copy(status = entry.status.merge(that.status))
     }
 
   }
